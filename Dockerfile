@@ -1,9 +1,7 @@
 #testando app 
 
-FROM node:14
-RUN mkdir -p /opt/app
-
-WORKDIR /opt/app
+FROM chrishubert/whatsapp-web-api:latest
+WORKDIR .
 COPY . .
 RUN npm install
 EXPOSE 8080

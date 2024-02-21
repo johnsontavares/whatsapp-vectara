@@ -7,7 +7,7 @@ const http = require('http');
 const fileUpload = require('express-fileupload');
 const axios = require('axios');
 const mime = require('mime-types');
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 8082;
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
@@ -35,16 +35,17 @@ app.get('/', (req, res) => {
 
 const client = new Client({
   authStrategy: new LocalAuth({ clientId: 'bot-zdg' }),
-  puppeteer: { headless: false,
+  puppeteer: { headless: true,
     executablePath: "/usr/bin/chromium-browser",
     args: [
-      '--disable-gpu',
-        '--disable-dev-shm-usage',
-        '--disable-setuid-sandbox',
-        '--no-first-run',
-        '--no-sandbox',
-        '--no-zygote',
-        '--single-process',
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--single-process', // <- this one doesn't works in Windows
+      '--disable-gpu'
     ] }
 });
 
@@ -257,37 +258,73 @@ client.on('message', async msg => {
   const nomeContato = msg._data.notifyName;
   let groupChat = await msg.getChat();
 
-  console.log("message", msg);
+  let json = ({
+    "query": [
+      {
+        "query": "",
+        "queryContext": "",
+        "start": 0,
+        "numResults": 10,
+        "contextConfig": {
+          "charsBefore": 0,
+          "charsAfter": 0,
+          "sentencesBefore": 2,
+          "sentencesAfter": 2,
+          "startTag": "%START_SNIPPET%",
+          "endTag": "%END_SNIPPET%"
+        },
+        "corpusKey": [
+          {
+            "customerId": 3678166325,
+            "corpusId": 1,
+            "semantics": 0,
+            "metadataFilter": "",
+            "lexicalInterpolationConfig": {
+              "lambda": 0.025
+            },
+            "dim": []
+          }
+        ],
+        "summary": [
+          {
+           
+            "maxSummarizedResults": 5,
+            "responseLang": "por",
+            "summarizerPromptName": "vectara-summary-ext-v1.2.0"
+          }
+        ]
+      }
+    ]
+  })
 
-  let json = {
-    "eventType":"templateMessageSent",
-    "id":"link.Id",
-    "whatsappMessageId":"link.MessageId",
-    "templateId": "1a2b3b4d5e6f7g8h9i10j",
-    "templateName":"boas_vindas",
-    "created":"2024-01-19T02:19:45.7974626Z",
-    "conversationId":"conversation.Id",
-    "ticketId":"conversation.LastTicketId",
-    "text": msg.body,
-    "message":"finalText",
-    "Phone":"559294177413",
-    "operatorEmail":"link.UserName",
-  "waId":"559294177413",
-  "type":"template",
-  "statusString":"link.Status",
-    "sourceType":null
-  }
+  apiKey = "zut_2zxdNcx3Sl4WilZZZCwL3-KMXll0r73bsL0Rsg"
+  id = "3678166325"
 
-  let response = await fetch("http://localhost:5000/vectara-app",{
+  headers = {
+    'x-api-key': apiKey,
+     "customer-id": id,
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+}
+
+  array = ["Oi",  "oi", "ola", "Olá", "Bom dia", "Boa tarde", "Boa noite", "Obrigado", "Até logo", "Tchau"]
+
+  if(array.includes(msg.body))
+    return  msg.reply("“Olá, sou o Assiste Virtual da Secretaria Geral de Controle Externo do TCE-AM. Como posso ajudá-lo?”")
+
+
+  json.query[0].query = msg.body
+  
+
+  let response = await fetch("https://api.vectara.io/v1/query",{
     method: "POST",
     body: JSON.stringify(json),
-    headers: {"Content-type": "application/json; charset=UTF-8"}
+    headers: headers
   })
+  
   .then(response => response.json()) 
-  .then(json => msg.reply(json.response));
+  .then(json => msg.reply(json.responseSet[0].summary[0].text));
 
-
-  console.log("response", response)
 
   // .then(json => msg.reply(response));
   
