@@ -116,54 +116,7 @@ app.post('/zdg-message', [
   const numberUser = number.substr(-8, 8);
   const message = req.body.message;
 
-  // if (numberDDI !== "55") {
-  //   const numberZDG = number + "@c.us";
-  //   client.sendMessage(numberZDG, message).then(response => {
-  //   res.status(200).json({
-  //     status: true,
-  //     message: 'BOT-ZDG Mensagem enviada',
-  //     response: response
-  //   });
-  //   }).catch(err => {
-  //   res.status(500).json({
-  //     status: false,
-  //     message: 'BOT-ZDG Mensagem não enviada',
-  //     response: err.text
-  //   });
-  //   });
-  // }
-  // else if (numberDDI === "55" && parseInt(numberDDD) <= 30) {
-  //   const numberZDG = "55" + numberDDD + "9" + numberUser + "@c.us";
-  //   client.sendMessage(numberZDG, message).then(response => {
-  //   res.status(200).json({
-  //     status: true,
-  //     message: 'BOT-ZDG Mensagem enviada',
-  //     response: response
-  //   });
-  //   }).catch(err => {
-  //   res.status(500).json({
-  //     status: false,
-  //     message: 'BOT-ZDG Mensagem não enviada',
-  //     response: err.text
-  //   });
-  //   });
-  // }
-  // else if (numberDDI === "55" && parseInt(numberDDD) > 30) {
-  //   const numberZDG = "55" + numberDDD + numberUser + "@c.us";
-  //   client.sendMessage(numberZDG, message).then(response => {
-  //   res.status(200).json({
-  //     status: true,
-  //     message: 'BOT-ZDG Mensagem enviada',
-  //     response: response
-  //   });
-  //   }).catch(err => {
-  //   res.status(500).json({
-  //     status: false,
-  //     message: 'BOT-ZDG Mensagem não enviada',
-  //     response: err.text
-  //   });
-  //   });
-  // }
+
 });
 
 
@@ -253,6 +206,59 @@ app.post('/zdg-media', [
   }
 });
 
+function FindReference(json, msg){
+  let data = json.responseSet[0].summary[0].text
+  let documents = json.responseSet[0].document
+
+  let responsesArray =  json.responseSet[0].response
+
+  let arrayPostionReferences = []
+  for(var i=0; i<data.length; i++){
+    if((data[i] == "[")&&(data[i+2] == "]")){
+      arrayPostionReferences.push({"reference": data[i+1], "documentIndex": "", "document": ""})
+
+    }
+  }
+
+  for(let i=0; i<arrayPostionReferences.length; i++){
+    arrayPostionReferences[i].documentIndex = responsesArray[arrayPostionReferences[i].reference-1].documentIndex
+    // PositionReference.documentIndex = responsesArray[PositionReference.reference].documentIndex
+  }
+
+  for(let i=0; i<arrayPostionReferences.length; i++){
+    documents
+    arrayPostionReferences[i].document = documents[arrayPostionReferences[i].documentIndex].id
+  }
+
+  for(let reference of arrayPostionReferences){
+    console.log("reference", reference)
+  }
+
+  let arrayReference = [];
+
+  let uniqueObject = {};
+
+  for(let i in arrayPostionReferences){
+    objTitle = arrayPostionReferences[i]['reference'];
+    uniqueObject[objTitle] = arrayPostionReferences[i];
+  }
+
+    for (i in uniqueObject) {
+      arrayReference.push(uniqueObject[i]);
+    }
+
+  console.log("arrayReference", arrayReference)
+
+  stringRefence = "\n\nReferencias: \n"
+  for(ele of arrayReference){
+    stringRefence += `[${ele.reference}] - ${ele.document}\n`
+  }
+
+
+  // console.log("arrayPostionReferences", arrayPostionReferences)
+  msg.reply(data+stringRefence);
+}
+
 client.on('message', async msg => {
 
   const nomeContato = msg._data.notifyName;
@@ -310,7 +316,7 @@ client.on('message', async msg => {
   array = ["Oi",  "oi", "ola", "Olá", "Bom dia", "Boa tarde", "Boa noite", "Obrigado", "Até logo", "Tchau"]
 
   if(array.includes(msg.body))
-    return  msg.reply("“Olá, sou o Assiste Virtual da Secretaria Geral de Controle Externo do TCE-AM. Como posso ajudá-lo?”")
+    return  msg.reply("“Olá, sou o Assistente Virtual da Secretaria Geral de Controle Externo do TCE-AM. Como posso ajudá-lo?”")
 
 
   json.query[0].query = msg.body
@@ -323,7 +329,7 @@ client.on('message', async msg => {
   })
   
   .then(response => response.json()) 
-  .then(json => msg.reply(json.responseSet[0].summary[0].text));
+  .then(json => FindReference(json, msg));
 
 
   // .then(json => msg.reply(response));
